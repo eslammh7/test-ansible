@@ -20,7 +20,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      keyName: ssh-key
+      KeyName: ssh-key
       ImageId: !Ref LatestAmiId
       SecurityGroupIds: 
       - !Ref WebServerSecGroup
