@@ -21,7 +21,7 @@ Resources:
         ToPort: -1
         CidrIp: 0.0.0.0/0
 
-  EC2-Instances:
+  ECInstances:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
