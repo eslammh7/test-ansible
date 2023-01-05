@@ -62,4 +62,5 @@ workflows:
   roll_back-test-workflow:
     jobs:
       - create_infrastructure
-      - smoke_test
+      - smoke_test:
+          require:[create_infrastructure]
