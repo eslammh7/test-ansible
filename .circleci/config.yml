@@ -123,7 +123,7 @@ jobs:
 workflows:
   promote_production:
     jobs:
-      - create_and_deploy_fron_end
+      - create_and_deploy_front_end
       - promote_to_production:
           requires: [create_and_deploy_front_end]
       - get_last_deployment_id
