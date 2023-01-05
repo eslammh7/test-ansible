@@ -42,12 +42,15 @@ jobs:
       - checkout
       - run: apk add --update curl
       - run:
-          command: URL="hhtps://blog.udacity.com"
-                if curl -s --head ${URL}
-                then return 0
-                else return 1
-                fi
-
+          command: |
+            URL="https://blog.udacity.com/"
+            # Test if website exists
+            if curl -s --head ${URL} 
+            then
+              return 0
+            else
+              return 1
+            fi
 # aws cloudformation deploy --template-file template.yml --parameter-overrides file://template-params.json --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} --region us-east-1
  
 # Invoke jobs via workflows
