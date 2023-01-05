@@ -5,28 +5,28 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 
-commands:
-  destroy_environment:
-    steps:
-      - run: 
-          name: destroy environment
-          command: aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFOLW_ID:0:5}
-          when: on_fail
+# commands:
+#   destroy_environment:
+#     steps:
+#       - run: 
+#           name: destroy environment
+#           command: aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFOLW_ID:0:5}
+#           when: on_fail
 
 jobs:
-  create_infrastructure:
-    docker: 
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run:
-          name: "create cloudformation stack"
-          command: |
-                aws cloudformation create-stack \
-                --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
-                --template-body file://template.yml \
-                --parameters file://template-params.json \
-                --region=us-east-1
+  # create_infrastructure:
+  #   docker: 
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: "create cloudformation stack"
+  #         command: |
+  #               aws cloudformation create-stack \
+  #               --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+  #               --template-body file://template.yml \
+  #               --parameters file://template-params.json \
+  #               --region=us-east-1
 
   # configure_infrastructure:
   #   docker:
@@ -44,23 +44,90 @@ jobs:
   #         command: |
   #               ansible-playbook -i inventory main.yml
 
-  smoke_test:
+  # smoke_test:
+  #   docker:
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: "test job"
+  #         command: 
+  #             return 1
+  #     - destroy_environment
+
+  create_and_deploy_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: 
+          name: bucket execution 
+          command: |
+                aws cloudformation deploy \
+                --template-file bucket.yml \
+                --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:5} \
+                --parameter-overrides MyBucketName="mybucket-${CIRCLE_WORKFLOW_ID:0:5}"
+      - run:
+          command: |
+                aws s3 sync index.html s3://mybucket-${CIRCLE_WORKFLOW_ID:0:5} --delete
+
+  get_last_deployment_id:
+    docker: 
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: yum install -y tar gzip
+      - run:
+          name: "fetch and save the old pipeline ID (bucket name) responsible for last release."
+          command: |
+                aws cloudformation \
+                list-exports --query "Exports[?Name==\'PipelineID\'].Value" \
+                --no-paginate --output text >> ~/textfile.txt
+      - persist_to_workspace;
+          root: ~/
+          paths: 
+            - textfiel.txt
+
+  promote_to_production:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
       - run:
-          name: "test job"
-          command: 
-              return 1
-      - destroy_environment
+          name: "Execute cloudfront.yml"
+          command: |
+                aws cloudformation deploy \
+                --template-file cloudfront.yml \
+                --stack-name production-distro \
+                --parameter-overrides PipelineID="mybucket-${CIRCLE_WORKFLOW_ID:0:5}"
+
+  clean_up_old_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: yum install -y tar gzip
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: "Destroy the previous S3 bucket and CloudFormation stack."
+          coomand: |
+                export OldBucketID=${cat ~/textfile.txt}
+                aws s3 rm "s3://${OldBucketID}" --recursive
+
+
 # aws cloudformation deploy --template-file template.yml --parameter-overrides file://template-params.json --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} --region us-east-1
  
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  roll_back-test-workflow:
+  promote_production:
     jobs:
-      - create_infrastructure
-      - smoke_test:
-          requires: [create_infrastructure]
+      - create_and_deploy_fron_end
+      - promote_to_production:
+          requires: [create_and_deploy_front_end]
+      - get_last_deployment_id
+      - clean_up_old_front_end:
+          requires:
+            - [get_last_deployment_id]
+            - [promote_to_production]
