@@ -10,7 +10,7 @@ commands:
     steps:
       - run: 
           name: destroy environment
-          command: aws cloudformation --delete-stack myStack-${CIRCLE_WORKFOLW_ID:0:5}
+          command: aws cloudformation delete-stack myStack-${CIRCLE_WORKFOLW_ID:0:5}
           when: on_fail
 
 jobs:
