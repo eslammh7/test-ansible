@@ -86,7 +86,7 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: 
-            - textfiel.txt
+            - textfile.txt
 
   promote_to_production:
     docker:
