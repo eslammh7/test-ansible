@@ -69,7 +69,7 @@ jobs:
                 --parameter-overrides MyBucketName="mybucket-${CIRCLE_WORKFLOW_ID:0:5}"
       - run:
           command: |
-                aws s3 sync ~/test-ansible/index.html s3://mybucket-${CIRCLE_WORKFLOW_ID:0:5} --delete
+                aws s3 sync . s3://mybucket-${CIRCLE_WORKFLOW_ID:0:5} --delete
 
   get_last_deployment_id:
     docker: 
