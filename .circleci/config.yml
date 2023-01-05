@@ -5,19 +5,35 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  create_infrastructure:
-    docker: 
-    - image: amazon/aws-cli
+  # create_infrastructure:
+  #   docker: 
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: "create cloudformation stack"
+  #         command: |
+  #               aws cloudformation create-stack \
+  #               --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+  #               --template-body file://template.yml \
+  #               --parameters file://template-params.json \
+  #               --region=us-east-1
+
+  configure_infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
     steps:
-    - checkout
-    - run:
-        name: "create cloudformation stack"
-        command: |
-              aws cloudformation create-stack \
-              --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
-              --template-body file://template.yml \
-              --parameters file://template-params.json \
-              --region=us-east-1
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["f1:f6:18:d2:82:43:27:2a:97:1a:a1:cc:35:05:ed:bc"]
+      - run:
+          name: "Install Ansible"
+          command: |
+                apk add --update ansible
+      - run:
+          name: "configure ec2 instance"
+          command: |
+                ansible-playbook -i inventory main.yml
 
 # aws cloudformation deploy --template-file template.yml --parameter-overrides file://template-params.json --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} --region us-east-1
  
@@ -26,4 +42,4 @@ jobs:
 workflows:
   create-structure-workflow:
     jobs:
-      - create_infrastructure
+      - configure_infrastructure
