@@ -15,12 +15,17 @@ Resources:
         FromPort: 22
         ToPort: 22
         CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        FromPort: -1
+        ToPort: -1
+        CidrIp: 0.0.0.0/0
 
-  ECInstances:
+  Instances:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      KeyName: ssh-key
+      keyName: ssh-key
       ImageId: !Ref LatestAmiId
       SecurityGroupIds: 
       - !Ref WebServerSecGroup
