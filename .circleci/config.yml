@@ -40,7 +40,7 @@ jobs:
       - image: alpine:latest
     steps:
       - checkout
-      - run: apk add --udate curl
+      - run: apk add --update curl
       - run:
           command: URL="hhtps://blog.udacity.com"
                 if curl -s --head ${URL}
